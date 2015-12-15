@@ -43,6 +43,7 @@ private:
     QSqlDatabase database;
     bool changesSaved;
     QHash<int,int> hashId2Col, hashCol2Id;
+    QHash<int, double> hashId2Offset, hashId2Ratio;
     QList<Channel> channelsList;
 
     QSignalMapper *mapper;

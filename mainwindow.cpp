@@ -54,7 +54,7 @@ void MainWindow::onLoadDBAction()
     bool ok;
     int col;
 
-    QString fn = QFileDialog::getOpenFileName(this,tr("Open DB file"), "C:\\Program files\\ThermoLog", tr("database (*.db)"));
+    QString fn = QFileDialog::getOpenFileName(this,tr("Open DB file"), "C:\\", tr("database (*.db)"));
     if(fn!="") fileName=fn;
     else return;
 
@@ -90,6 +90,9 @@ void MainWindow::onLoadDBAction()
     channelsList.clear();
     hashId2Col.clear();
     hashCol2Id.clear();
+    hashId2Offset.clear();
+    hashId2Ratio.clear();
+
     col = 1; //В колона 0 е дата/час.
     while(qry.next())
     {   //ID в базата данни
@@ -113,6 +116,8 @@ void MainWindow::onLoadDBAction()
         channelsList.append(chan);
         hashId2Col.insert(chan.id(), col);//Запазвам кой id канал в коя колона ще отиде
         hashCol2Id.insert(col,chan.id());
+        hashId2Offset.insert(chan.id(), chan.offset());
+        hashId2Ratio.insert(chan.id(), chan.ratio());
         col++;
     }
     //Оразмеряване на колоните в таблицата
@@ -166,7 +171,9 @@ void MainWindow::onLoadDBAction()
         chId = qry.value(1).toInt(&ok);
         nTmp = qry.value(2).toInt(&ok);
         dTemp = (double)nTmp/100;
-        itm = new QTableWidgetItem(QString::number(dTemp)); //температура
+        dTemp *= hashId2Ratio[chId];
+        dTemp += hashId2Offset[chId];
+        itm = new QTableWidgetItem(QString::number(dTemp,'f',1)); //температура
         itm->setTextAlignment(Qt::AlignCenter);
         //по ID на канала се разбира в коя колона да се сложи температурата
         col = hashId2Col[chId];
@@ -188,6 +195,7 @@ void MainWindow::onCommitDBAction()
     QString timestamp, str;
     bool incorrectValuesFound = false;
     bool dbWriteFail = false;
+    double offset, ratio;
 
     //отваряне на базата данни
     QFile dbFile(fileName);
@@ -230,9 +238,14 @@ void MainWindow::onCommitDBAction()
             }
             else   ui->tableWidget->item(row,col)->setBackgroundColor(Qt::white);
 
+            chanId = hashCol2Id[col];
+            offset = hashId2Offset[chanId];
+            ratio = hashId2Ratio[chanId];
+            dTemp -= offset;
+            dTemp /= ratio;
             dTemp *= 100;
             nTemp = (int) dTemp;
-            chanId = hashCol2Id[col];
+
 
             //Проверява се дали има запис с този Тimestamp и ChannelID. Ако има, то се ползва UPDATE
             //Иначе се ползва INSERT
@@ -381,7 +394,7 @@ void MainWindow::on_btnDeleteRow_clicked()
        }
 
        QString timestamp = ui->tableWidget->item(row,0)->text();
-       QString warning = QString("Записът от ред %1 за %2 ще бъде изтрит от БД!").arg(row).arg(timestamp);
+       QString warning = QString("Записът от ред %1 за %2 ще бъде изтрит от БД!").arg(row+1).arg(timestamp);
        warning += "\nПромяната не може да бъде отменена. Сигурни ли сте?";
        int res = QMessageBox::warning(this,"ПРЕДУПРЕЖДЕНИЕ", warning, QMessageBox::Ok, QMessageBox::Cancel);
 
