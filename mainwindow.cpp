@@ -101,10 +101,14 @@ void MainWindow::onLoadDBAction()
         chan.setNode( node);
         // 1-wire адрес
         chan.setAddress(qry.value(3).toString());
+        //Офсет
+        chan.setOffset(qry.value(5).toDouble());
+        //Коефициент
+        chan.setRatio(qry.value(6).toDouble());
 
         //Записваат се данни само за канали с коректен адрес и номер на контролер
         if((chan.node()<0) || (chan.node()>15)) continue;
-        if(chan.address().length() !=8 ) continue;
+        if(chan.address().length() !=16 ) continue;
 
         channelsList.append(chan);
         hashId2Col.insert(chan.id(), col);//Запазвам кой id канал в коя колона ще отиде
